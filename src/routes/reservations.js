@@ -162,7 +162,6 @@ router.post("/", requireAuth, async (req, res) => {
   }
 });
 
-// GET reservation by ID (user can see his own, owner can see all)
 router.get("/:id", async (req, res) => {
   try {
     const reservationId = req.params.id;
