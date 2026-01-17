@@ -15,6 +15,7 @@ import reservationsRoutes from "./routes/reservations.js";
 import clubImagesRoutes from "./routes/club-images.js";
 import uploadRoutes from "./routes/upload.js";
 import usersRoutes from "./routes/users.js";
+import facilitiesRoutes from "./routes/club-facilities.js";
 
 
 dotenv.config();
@@ -41,6 +42,7 @@ app.use("/api/reservations", reservationsRoutes);
 app.use("/api/club-images", clubImagesRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/club-facilities", facilitiesRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: "🚫 Route not found" });

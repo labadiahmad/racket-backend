@@ -3,8 +3,16 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const db = new pg.Client({
+const { Pool } = pg;
+
+const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  connectionTimeoutMillis: 5000,
+  idleTimeoutMillis: 30000,
 });
 
-export default db;
+pool.on("error", (err) => {
+  console.error("❌ Unexpected PG pool error:", err.message);
+});
+
+export default pool;

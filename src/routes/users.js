@@ -1,11 +1,10 @@
 import express from "express";
 import db from "../db.js";
-import requireAuth from "../middleware/auth.js";
+import userAuth from "../middleware/userAuth.js";
 
 const router = express.Router();
 
-
-router.get("/me", requireAuth, async (req, res) => {
+router.get("/me", userAuth, async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];
 
@@ -27,7 +26,7 @@ router.get("/me", requireAuth, async (req, res) => {
   }
 });
 
-router.put("/me", requireAuth, async (req, res) => {
+router.put("/me", userAuth, async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];
     const { full_name, email, phone, photo_url } = req.body;
