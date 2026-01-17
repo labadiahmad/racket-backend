@@ -17,7 +17,7 @@ const storage = multer.diskStorage({
     if (folder === "clubs") dest = "uploads/clubs";
     if (folder === "avatars") dest = "uploads/avatars";
     if (folder === "reviews") dest = "uploads/reviews";
-
+    if (folder === "courts") dest = "uploads/courts";
     ensureDir(dest);
     cb(null, dest);
   },

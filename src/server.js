@@ -18,6 +18,7 @@ import usersRoutes from "./routes/users.js";
 import facilitiesRoutes from "./routes/club-facilities.js";
 import reviewsRoutes from "./routes/reviews.js";
 import reviewImagesRoutes from "./routes/review-images.js";
+import courtImagesRoutes from "./routes/court-images.js";
 
 dotenv.config();
 
@@ -46,6 +47,8 @@ app.use("/api/users", usersRoutes);
 app.use("/api/club-facilities", facilitiesRoutes);
 app.use("/api/reviews", reviewsRoutes);
 app.use("/api/review-images", reviewImagesRoutes);
+app.use("/api/court-images", courtImagesRoutes);
+
 app.use((req, res) => {
   res.status(404).json({ message: "🚫 Route not found" });
 });
