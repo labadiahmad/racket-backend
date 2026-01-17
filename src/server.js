@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 
 import db from "./db.js";
 import authRoutes from "./routes/auth.js";
+import clubsRoutes from "./routes/clubs.js";
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/clubs", clubsRoutes);
 
 db.connect()
   .then(() => {
