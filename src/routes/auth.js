@@ -3,8 +3,7 @@ import db from "../db.js";
 
 const router = express.Router();
 
-// POST /api/auth/signup
-// body: { full_name, email, phone, password, role }
+
 router.post("/signup", async (req, res) => {
   try {
     const { full_name, email, phone, password, role } = req.body;
@@ -28,8 +27,7 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-// POST /api/auth/login
-// body: { email, password }
+
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
