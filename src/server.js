@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 import db from "./db.js";
 import authRoutes from "./routes/auth.js";
 import clubsRoutes from "./routes/clubs.js";
-
+import courtsRoutes from "./routes/courts.js";
 dotenv.config();
 
 const app = express();
@@ -22,7 +22,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/clubs", clubsRoutes);
-
+app.use("/api/courts", courtsRoutes);
 db.connect()
   .then(() => {
     console.log("✅ DB connected");
