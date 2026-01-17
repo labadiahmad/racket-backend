@@ -16,6 +16,7 @@ const storage = multer.diskStorage({
     let dest = "uploads";
     if (folder === "clubs") dest = "uploads/clubs";
     if (folder === "avatars") dest = "uploads/avatars";
+    if (folder === "reviews") dest = "uploads/reviews";
 
     ensureDir(dest);
     cb(null, dest);
@@ -37,14 +38,12 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, 
+  limits: { fileSize: 5 * 1024 * 1024 },
 });
 
 router.post("/", (req, res) => {
   upload.single("file")(req, res, (err) => {
-    if (err) {
-      return res.status(400).json({ message: err.message });
-    }
+    if (err) return res.status(400).json({ message: err.message });
 
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded. Use form-data key: file" });
