@@ -45,10 +45,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-/**
- * POST /api/clubs
- * Owner only - create club
- */
+
 router.post("/", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
@@ -56,6 +53,7 @@ router.post("/", ownerAuth, async (req, res) => {
 
     const {
       name,
+      city,
       address,
       phone_number,
       maps_url,
@@ -68,19 +66,20 @@ router.post("/", ownerAuth, async (req, res) => {
       lon,
     } = req.body;
 
-    if (!name || !address) {
-      return res.status(400).json({ message: "name and address are required" });
+    if (!name || !city || !address) {
+      return res.status(400).json({ message: "name, city, and address are required" });
     }
 
     const result = await db.query(
       `INSERT INTO clubs
-        (owner_id, name, address, phone_number, maps_url, whatsapp, about, cover_url, logo_url, rules, lat, lon)
+        (owner_id, name, city, address, phone_number, maps_url, whatsapp, about, cover_url, logo_url, rules, lat, lon)
        VALUES
-        ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+        ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
        RETURNING *`,
       [
         ownerId,
         name,
+        city,
         address,
         phone_number || null,
         maps_url || null,
@@ -101,6 +100,7 @@ router.post("/", ownerAuth, async (req, res) => {
   }
 });
 
+
 router.put("/:id", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
@@ -108,6 +108,7 @@ router.put("/:id", ownerAuth, async (req, res) => {
 
     const {
       name,
+      city,
       address,
       phone_number,
       maps_url,
@@ -124,21 +125,23 @@ router.put("/:id", ownerAuth, async (req, res) => {
     const result = await db.query(
       `UPDATE clubs SET
         name = COALESCE($1, name),
-        address = COALESCE($2, address),
-        phone_number = COALESCE($3, phone_number),
-        maps_url = COALESCE($4, maps_url),
-        whatsapp = COALESCE($5, whatsapp),
-        about = COALESCE($6, about),
-        cover_url = COALESCE($7, cover_url),
-        logo_url = COALESCE($8, logo_url),
-        rules = COALESCE($9, rules),
-        lat = COALESCE($10, lat),
-        lon = COALESCE($11, lon),
-        is_active = COALESCE($12, is_active)
-       WHERE club_id = $13 AND owner_id = $14
+        city = COALESCE($2, city),
+        address = COALESCE($3, address),
+        phone_number = COALESCE($4, phone_number),
+        maps_url = COALESCE($5, maps_url),
+        whatsapp = COALESCE($6, whatsapp),
+        about = COALESCE($7, about),
+        cover_url = COALESCE($8, cover_url),
+        logo_url = COALESCE($9, logo_url),
+        rules = COALESCE($10, rules),
+        lat = COALESCE($11, lat),
+        lon = COALESCE($12, lon),
+        is_active = COALESCE($13, is_active)
+       WHERE club_id = $14 AND owner_id = $15
        RETURNING *`,
       [
         name || null,
+        city || null,
         address || null,
         phone_number || null,
         maps_url || null,
@@ -165,6 +168,7 @@ router.put("/:id", ownerAuth, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 router.delete("/:id", ownerAuth, async (req, res) => {
   try {
