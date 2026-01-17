@@ -4,6 +4,7 @@ import ownerAuth from "../middleware/ownerAuth.js";
 
 const router = express.Router();
 
+
 router.get("/", async (req, res) => {
   try {
     const result = await db.query("SELECT * FROM clubs ORDER BY club_id");
@@ -17,8 +18,26 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const result = await db.query("SELECT * FROM clubs WHERE club_id = $1", [req.params.id]);
-    if (result.rows.length === 0) return res.status(404).json({ message: "Club not found" });
+    const clubId = req.params.id;
+
+    const result = await db.query(
+      `
+      SELECT
+        c.*,
+        COALESCE(ROUND(AVG(r.stars)::numeric, 1), 0) AS avg_stars,
+        COUNT(r.review_id) AS reviews_count
+      FROM clubs c
+      LEFT JOIN reviews r ON r.club_id = c.club_id
+      WHERE c.club_id = $1
+      GROUP BY c.club_id
+      `,
+      [clubId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Club not found" });
+    }
+
     res.json(result.rows[0]);
   } catch (err) {
     console.error("GET /clubs/:id error:", err.message);
@@ -26,15 +45,27 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-
+/**
+ * POST /api/clubs
+ * Owner only - create club
+ */
 router.post("/", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
     if (!ownerId) return res.status(400).json({ message: "Missing x-user-id header" });
 
     const {
-      name, address, phone_number, maps_url, whatsapp, about,
-      cover_url, logo_url, rules, lat, lon
+      name,
+      address,
+      phone_number,
+      maps_url,
+      whatsapp,
+      about,
+      cover_url,
+      logo_url,
+      rules,
+      lat,
+      lon,
     } = req.body;
 
     if (!name || !address) {
@@ -70,15 +101,24 @@ router.post("/", ownerAuth, async (req, res) => {
   }
 });
 
-
 router.put("/:id", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
     if (!ownerId) return res.status(400).json({ message: "Missing x-user-id header" });
 
     const {
-      name, address, phone_number, maps_url, whatsapp, about,
-      cover_url, logo_url, rules, lat, lon, is_active
+      name,
+      address,
+      phone_number,
+      maps_url,
+      whatsapp,
+      about,
+      cover_url,
+      logo_url,
+      rules,
+      lat,
+      lon,
+      is_active,
     } = req.body;
 
     const result = await db.query(
@@ -125,7 +165,6 @@ router.put("/:id", ownerAuth, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-
 
 router.delete("/:id", ownerAuth, async (req, res) => {
   try {

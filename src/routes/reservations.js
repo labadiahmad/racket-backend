@@ -1,5 +1,6 @@
 import express from "express";
 import db from "../db.js";
+import userAuth from "../middleware/userAuth.js";
 
 const router = express.Router();
 
@@ -20,15 +21,53 @@ function requireAuth(req, res, next) {
   next();
 }
 
-function requireOwnerOrAdmin(req, res, next) {
-  const role = getRole(req);
-  if (role === "owner" || role === "admin") return next();
-  return res.status(403).json({ message: "Owner/Admin access only" });
-}
-
 function makeBookingId() {
   return "BK" + Date.now().toString(36).toUpperCase();
 }
+
+router.get("/my", userAuth, async (req, res) => {
+  try {
+    const userId = req.headers["x-user-id"];
+
+    const result = await db.query(
+      `
+      SELECT
+        r.reservation_id,
+        r.booking_id,
+        r.date_iso,
+        r.status,
+        r.booked_by_name,
+        r.phone,
+        r.player1, r.player2, r.player3, r.player4,
+
+        c.club_id,
+        c.name AS club_name,
+        c.logo_url AS club_logo,
+
+        ct.court_id,
+        ct.name AS court_name,
+        ct.cover_url AS court_image,
+
+        s.slot_id,
+        s.time_from,
+        s.time_to,
+        s.price
+      FROM reservations r
+      JOIN clubs c ON r.club_id = c.club_id
+      JOIN courts ct ON r.court_id = ct.court_id
+      JOIN time_slots s ON r.slot_id = s.slot_id
+      WHERE r.user_id = $1
+      ORDER BY r.date_iso DESC, s.time_from ASC
+      `,
+      [userId]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("GET /reservations/my error:", err.message);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 
 router.get("/", requireAuth, async (req, res) => {
@@ -37,9 +76,7 @@ router.get("/", requireAuth, async (req, res) => {
     const userId = getUserId(req);
 
     if (role === "admin") {
-      const result = await db.query(
-        `SELECT * FROM reservations ORDER BY reservation_id DESC`
-      );
+      const result = await db.query(`SELECT * FROM reservations ORDER BY reservation_id DESC`);
       return res.json(result.rows);
     }
 
@@ -165,7 +202,7 @@ router.post("/", requireAuth, async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const reservationId = req.params.id;
-    const role = req.headers["x-role"];
+    const role = (req.headers["x-role"] || "").toLowerCase();
     const userId = req.headers["x-user-id"];
 
     let query;
@@ -207,10 +244,7 @@ router.put("/:id", requireAuth, async (req, res) => {
       return res.status(400).json({ message: "Send date_iso and/or slot_id to update" });
     }
 
-    const existing = await db.query(
-      `SELECT * FROM reservations WHERE reservation_id = $1`,
-      [id]
-    );
+    const existing = await db.query(`SELECT * FROM reservations WHERE reservation_id = $1`, [id]);
     if (existing.rows.length === 0) return res.status(404).json({ message: "Reservation not found" });
 
     const r = existing.rows[0];
@@ -258,17 +292,13 @@ router.put("/:id", requireAuth, async (req, res) => {
   }
 });
 
-
 router.delete("/:id", requireAuth, async (req, res) => {
   try {
     const role = getRole(req);
     const userId = getUserId(req);
     const { id } = req.params;
 
-    const existing = await db.query(
-      `SELECT * FROM reservations WHERE reservation_id = $1`,
-      [id]
-    );
+    const existing = await db.query(`SELECT * FROM reservations WHERE reservation_id = $1`, [id]);
     if (existing.rows.length === 0) return res.status(404).json({ message: "Reservation not found" });
 
     const r = existing.rows[0];
@@ -285,10 +315,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
       if (checkOwner.rows.length === 0) return res.status(403).json({ message: "Not your club reservation" });
     }
 
-    const deleted = await db.query(
-      `DELETE FROM reservations WHERE reservation_id = $1 RETURNING *`,
-      [id]
-    );
+    const deleted = await db.query(`DELETE FROM reservations WHERE reservation_id = $1 RETURNING *`, [id]);
 
     res.json({ deleted: deleted.rows[0] });
   } catch (err) {
