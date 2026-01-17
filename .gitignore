@@ -1,6 +1,6 @@
 # deps
 node_modules
-
+uploads/
 # env
 .env
 
