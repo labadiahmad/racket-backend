@@ -8,7 +8,7 @@ import authRoutes from "./routes/auth.js";
 import clubsRoutes from "./routes/clubs.js";
 import courtsRoutes from "./routes/courts.js";
 import slotsRoutes from "./routes/slots.js";
-
+import reservationRoutes from "./routes/reservations.js";
 
 dotenv.config();
 
@@ -27,7 +27,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/clubs", clubsRoutes);
 app.use("/api/courts", courtsRoutes);
 app.use("/api/slots", slotsRoutes);
-
+app.use("/api/reservations", reservationRoutes);
 
 
 db.connect()
