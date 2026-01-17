@@ -1,32 +1,23 @@
 {
   "name": "racket-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-"scripts": {
-  "start": "node src/server.js",
-  "dev": "nodemon src/server.js"
-},
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/labadiahmad/racket-backend.git"
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/labadiahmad/racket-backend/issues"
-  },
-  "homepage": "https://github.com/labadiahmad/racket-backend#readme",
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.2.1"
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "morgan": "^1.10.0",
+    "pg": "^8.16.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
-  },"engines": {
-  "node": ">=18"
-}
+  },
+  "engines": {
+    "node": ">=18"
+  }
 }
