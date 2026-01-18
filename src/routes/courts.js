@@ -5,20 +5,32 @@ import ownerAuth from "../middleware/ownerAuth.js";
 const router = express.Router();
 
 
+
 router.get("/", async (req, res) => {
   try {
     const { club_id } = req.query;
 
-    if (!club_id) {
-      return res.status(400).json({ message: "club_id is required" });
-    }
+   const result = await db.query(`
+  SELECT
+    ct.*,
+    cl.name AS club_name,
+    cl.city AS club_city,
+    cl.address AS club_address,
+    cl.cover_url AS club_cover_url,
+    cl.logo_url AS club_logo_url,
 
-    const result = await db.query(
-      "SELECT * FROM courts WHERE club_id = $1 ORDER BY court_id",
-      [club_id]
-    );
+    COALESCE(ROUND(AVG(r.stars))::int, 0) AS club_rating,
+    COALESCE(COUNT(r.review_id), 0)::int AS club_reviews
 
-    res.json(result.rows);
+  FROM courts ct
+  JOIN clubs cl ON cl.club_id = ct.club_id
+  LEFT JOIN reviews r ON r.club_id = cl.club_id
+  WHERE ($1::int IS NULL OR ct.club_id = $1::int)
+  GROUP BY ct.court_id, cl.club_id
+  ORDER BY ct.court_id DESC
+`, [club_id ? Number(club_id) : null]);
+
+res.json(result.rows);
   } catch (err) {
     console.error("GET /courts error:", err.message);
     res.status(500).json({ message: "Server error" });
@@ -28,16 +40,60 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const result = await db.query(
-      "SELECT * FROM courts WHERE court_id = $1",
-      [req.params.id]
+    const courtId = Number(req.params.id);
+
+    const courtRes = await db.query(
+      `
+      SELECT
+        ct.*,
+        cl.name AS club_name,
+        cl.city AS club_city,
+        cl.address AS club_address,
+        cl.cover_url AS club_cover_url,
+        cl.logo_url AS club_logo_url,
+        COALESCE(ROUND(AVG(r.stars))::int, 0) AS club_rating,
+        COALESCE(COUNT(r.review_id), 0)::int AS club_reviews
+      FROM courts ct
+      JOIN clubs cl ON cl.club_id = ct.club_id
+      LEFT JOIN reviews r ON r.club_id = cl.club_id
+      WHERE ct.court_id = $1
+      GROUP BY ct.court_id, cl.club_id
+      `,
+      [courtId]
     );
 
-    if (result.rows.length === 0) {
+    if (courtRes.rows.length === 0) {
       return res.status(404).json({ message: "Court not found" });
     }
 
-    res.json(result.rows[0]);
+    const court = courtRes.rows[0];
+
+    const imgsRes = await db.query(
+      `
+      SELECT image_id, image_url, position
+      FROM court_images
+      WHERE court_id = $1
+      ORDER BY position ASC, image_id ASC
+      `,
+      [courtId]
+    );
+
+    const otherRes = await db.query(
+      `
+      SELECT court_id, club_id, name, type, cover_url
+      FROM courts
+      WHERE club_id = $1 AND court_id <> $2
+      ORDER BY court_id DESC
+      LIMIT 6
+      `,
+      [court.club_id, courtId]
+    );
+
+    res.json({
+      court,
+      images: imgsRes.rows,
+      other_courts: otherRes.rows,
+    });
   } catch (err) {
     console.error("GET /courts/:id error:", err.message);
     res.status(500).json({ message: "Server error" });

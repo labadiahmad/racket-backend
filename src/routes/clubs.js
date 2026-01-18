@@ -4,10 +4,19 @@ import ownerAuth from "../middleware/ownerAuth.js";
 
 const router = express.Router();
 
-
 router.get("/", async (req, res) => {
   try {
-    const result = await db.query("SELECT * FROM clubs ORDER BY club_id");
+    const result = await db.query(`
+      SELECT
+        c.*,
+        COALESCE(ROUND(AVG(r.stars))::int, 0) AS avg_rating,
+        COALESCE(COUNT(r.review_id), 0)::int AS reviews_count
+      FROM clubs c
+      LEFT JOIN reviews r ON r.club_id = c.club_id
+      GROUP BY c.club_id
+      ORDER BY c.club_id
+    `);
+
     res.json(result.rows);
   } catch (err) {
     console.error("GET /clubs error:", err.message);
@@ -15,24 +24,20 @@ router.get("/", async (req, res) => {
   }
 });
 
-
 router.get("/:id", async (req, res) => {
   try {
-    const clubId = req.params.id;
+    const clubId = Number(req.params.id);
 
-    const result = await db.query(
-      `
+    const result = await db.query(`
       SELECT
         c.*,
-        COALESCE(ROUND(AVG(r.stars)::numeric, 1), 0) AS avg_stars,
-        COUNT(r.review_id) AS reviews_count
+        COALESCE(ROUND(AVG(r.stars))::int, 0) AS avg_rating,
+        COALESCE(COUNT(r.review_id), 0)::int AS reviews_count
       FROM clubs c
       LEFT JOIN reviews r ON r.club_id = c.club_id
       WHERE c.club_id = $1
       GROUP BY c.club_id
-      `,
-      [clubId]
-    );
+    `, [clubId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Club not found" });
