@@ -14,7 +14,7 @@ router.get("/", async (req, res) => {
     }
 
     const result = await db.query(
-      `SELECT image_id, court_id, image_url, position, created_at
+      `SELECT image_id, court_id, image_url, position
        FROM court_images
        WHERE court_id = $1
        ORDER BY position ASC, image_id ASC`,
@@ -53,7 +53,7 @@ router.post("/", ownerAuth, async (req, res) => {
     const result = await db.query(
       `INSERT INTO court_images (court_id, image_url, position)
        VALUES ($1, $2, $3)
-       RETURNING image_id, court_id, image_url, position, created_at`,
+       RETURNING image_id, court_id, image_url, position`,
       [court_id, image_url, Number(position) || 0]
     );
 
@@ -79,7 +79,7 @@ router.put("/:id", ownerAuth, async (req, res) => {
        WHERE ci.image_id = $2
          AND ci.court_id = c.court_id
          AND cl.owner_id = $3
-       RETURNING ci.image_id, ci.court_id, ci.image_url, ci.position, ci.created_at`,
+       RETURNING ci.image_id, ci.court_id, ci.image_url, ci.position`,
       [position, id, ownerId]
     );
 
@@ -107,7 +107,7 @@ router.delete("/:id", ownerAuth, async (req, res) => {
          AND ci.court_id = c.court_id
          AND c.club_id = cl.club_id
          AND cl.owner_id = $2
-       RETURNING ci.image_id, ci.court_id, ci.image_url, ci.position, ci.created_at`,
+       RETURNING ci.image_id, ci.court_id, ci.image_url, ci.position`,
       [id, ownerId]
     );
 

@@ -51,13 +51,24 @@ router.get("/", async (req, res) => {
 });
 
 
-router.post("/", userAuth, async (req, res) => {
+      router.post("/", userAuth, async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"];
-    const { club_id, stars, comment } = req.body;
+    const userIdRaw = req.headers["x-user-id"];
+    const userId = userIdRaw ? Number(userIdRaw) : null;
+
+    const { club_id, stars, comment, images } = req.body;
 
     if (!club_id || !stars || !comment) {
       return res.status(400).json({ message: "club_id, stars, comment are required" });
+    }
+
+    if (!userId || Number.isNaN(userId)) {
+      return res.status(401).json({ message: "Invalid user. Please login again." });
+    }
+
+    const userCheck = await db.query(`SELECT user_id FROM users WHERE user_id = $1`, [userId]);
+    if (userCheck.rows.length === 0) {
+      return res.status(401).json({ message: "User not found. Please login again." });
     }
 
     const clubCheck = await db.query(`SELECT club_id FROM clubs WHERE club_id = $1`, [club_id]);
@@ -65,16 +76,59 @@ router.post("/", userAuth, async (req, res) => {
       return res.status(404).json({ message: "Club not found" });
     }
 
-    const result = await db.query(
+    const reviewRes = await db.query(
       `
       INSERT INTO reviews (club_id, user_id, stars, comment)
       VALUES ($1, $2, $3, $4)
       RETURNING review_id, club_id, user_id, stars, comment, created_at, updated_at
       `,
-      [club_id, userId, stars, comment]
+      [Number(club_id), userId, Number(stars), comment]
     );
 
-    res.status(201).json(result.rows[0]);
+    const review = reviewRes.rows[0];
+
+    const imgList = Array.isArray(images) ? images : [];
+    for (let i = 0; i < imgList.length; i++) {
+      const url = imgList[i];
+      if (!url) continue;
+
+      await db.query(
+        `INSERT INTO review_images (review_id, image_url, position)
+         VALUES ($1, $2, $3)`,
+        [review.review_id, url, i]
+      );
+    }
+
+    const full = await db.query(
+      `
+      SELECT
+        r.review_id,
+        r.club_id,
+        r.user_id,
+        r.stars,
+        r.comment,
+        r.created_at,
+        r.updated_at,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'image_id', ri.image_id,
+              'image_url', ri.image_url,
+              'position', ri.position
+            )
+            ORDER BY ri.position, ri.image_id
+          ) FILTER (WHERE ri.image_id IS NOT NULL),
+          '[]'::json
+        ) AS images
+      FROM reviews r
+      LEFT JOIN review_images ri ON ri.review_id = r.review_id
+      WHERE r.review_id = $1
+      GROUP BY r.review_id
+      `,
+      [review.review_id]
+    );
+
+    res.status(201).json(full.rows[0]);
   } catch (err) {
     console.error("POST /reviews error:", err.message);
     res.status(500).json({ message: "Server error" });
