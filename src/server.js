@@ -19,11 +19,12 @@ import facilitiesRoutes from "./routes/club-facilities.js";
 import reviewsRoutes from "./routes/reviews.js";
 import reviewImagesRoutes from "./routes/review-images.js";
 import courtImagesRoutes from "./routes/court-images.js";
+import ownerDashboardRoutes from "./routes/owner-dashboard.js";
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5050;
+const PORT = process.env.PORT ;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,6 +49,7 @@ app.use("/api/club-facilities", facilitiesRoutes);
 app.use("/api/reviews", reviewsRoutes);
 app.use("/api/review-images", reviewImagesRoutes);
 app.use("/api/court-images", courtImagesRoutes);
+app.use("/api/owner", ownerDashboardRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: "🚫 Route not found" });

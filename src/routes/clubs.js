@@ -105,11 +105,12 @@ router.post("/", ownerAuth, async (req, res) => {
   }
 });
 
-
 router.put("/:id", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
     if (!ownerId) return res.status(400).json({ message: "Missing x-user-id header" });
+
+    const clubId = Number(req.params.id);
 
     const {
       name,
@@ -145,20 +146,20 @@ router.put("/:id", ownerAuth, async (req, res) => {
        WHERE club_id = $14 AND owner_id = $15
        RETURNING *`,
       [
-        name || null,
-        city || null,
-        address || null,
-        phone_number || null,
-        maps_url || null,
-        whatsapp || null,
-        about || null,
-        cover_url || null,
-        logo_url || null,
-        rules || null,
-        lat || null,
-        lon || null,
-        is_active,
-        req.params.id,
+        name ?? null,
+        city ?? null,
+        address ?? null,
+        phone_number ?? null,
+        maps_url ?? null,
+        whatsapp ?? null,
+        about ?? null,
+        cover_url ?? null,
+        logo_url ?? null,
+        rules ?? null,
+        lat ?? null,
+        lon ?? null,
+        is_active ?? null,
+        clubId,
         ownerId,
       ]
     );
@@ -167,13 +168,12 @@ router.put("/:id", ownerAuth, async (req, res) => {
       return res.status(404).json({ message: "Club not found or not your club" });
     }
 
-    res.json(result.rows[0]);
+    res.json({ club: result.rows[0] });
   } catch (err) {
     console.error("PUT /clubs/:id error:", err.message);
     res.status(500).json({ message: "Server error" });
   }
 });
-
 
 router.delete("/:id", ownerAuth, async (req, res) => {
   try {

@@ -75,22 +75,44 @@ router.get("/", requireAuth, async (req, res) => {
     const role = getRole(req);
     const userId = getUserId(req);
 
-    if (role === "admin") {
-      const result = await db.query(`SELECT * FROM reservations ORDER BY reservation_id DESC`);
-      return res.json(result.rows);
-    }
+   
 
     if (role === "owner") {
-      const result = await db.query(
-        `SELECT r.*
-         FROM reservations r
-         JOIN clubs cl ON r.club_id = cl.club_id
-         WHERE cl.owner_id = $1
-         ORDER BY r.reservation_id DESC`,
-        [userId]
-      );
-      return res.json(result.rows);
-    }
+  const result = await db.query(
+    `
+    SELECT
+      r.reservation_id,
+      r.booking_id,
+      r.date_iso,
+      r.status,
+      r.booked_by_name,
+      r.phone,
+      r.player1, r.player2, r.player3, r.player4,
+
+      r.club_id,
+      cl.name AS club_name,
+
+      r.court_id,
+      ct.name AS court_name,
+
+      r.slot_id,
+      s.time_from,
+      s.time_to,
+      s.price AS slot_price,
+
+      (s.price) AS total_price
+    FROM reservations r
+    JOIN clubs cl ON r.club_id = cl.club_id
+    JOIN courts ct ON r.court_id = ct.court_id
+    JOIN time_slots s ON r.slot_id = s.slot_id
+    WHERE cl.owner_id = $1
+    ORDER BY r.date_iso DESC, s.time_from ASC, r.reservation_id DESC
+    `,
+    [userId]
+  );
+
+  return res.json(result.rows);
+}
 
     const result = await db.query(
       `SELECT * FROM reservations
@@ -199,6 +221,33 @@ router.post("/", requireAuth, async (req, res) => {
   }
 });
 
+router.get("/booked-slots", async (req, res) => {
+  try {
+    const { court_id, date_iso } = req.query;
+
+    if (!court_id || !date_iso) {
+      return res.status(400).json({ message: "court_id and date_iso are required" });
+    }
+
+    const result = await db.query(
+      `
+      SELECT slot_id
+      FROM reservations
+      WHERE court_id = $1
+        AND date_iso = $2
+        AND status = 'Active'
+      `,
+      [Number(court_id), date_iso]
+    );
+
+    // return: [1,2,3]
+    res.json(result.rows.map((r) => Number(r.slot_id)));
+  } catch (err) {
+    console.error("GET /reservations/booked-slots error:", err.message);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.get("/:id", async (req, res) => {
   try {
     const reservationId = req.params.id;
@@ -292,35 +341,35 @@ router.put("/:id", requireAuth, async (req, res) => {
   }
 });
 
-router.delete("/:id", requireAuth, async (req, res) => {
+
+router.delete("/:id", async (req, res) => {
   try {
-    const role = getRole(req);
-    const userId = getUserId(req);
-    const { id } = req.params;
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ message: "Invalid reservation id" });
 
-    const existing = await db.query(`SELECT * FROM reservations WHERE reservation_id = $1`, [id]);
-    if (existing.rows.length === 0) return res.status(404).json({ message: "Reservation not found" });
+    const userId = Number(req.headers["x-user-id"]);
+    const role = String(req.headers["x-role"] || "user");
 
-    const r = existing.rows[0];
+    const q = `
+      DELETE FROM reservations
+      WHERE reservation_id = $1
+      AND (
+        $2 = 'owner'
+        OR user_id = $3
+      )
+      RETURNING reservation_id
+    `;
 
-    if (role === "user" && r.user_id !== userId) {
-      return res.status(403).json({ message: "Not your reservation" });
+    const result = await db.query(q, [id, role, userId]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Reservation not found or not allowed" });
     }
 
-    if (role === "owner") {
-      const checkOwner = await db.query(
-        `SELECT club_id FROM clubs WHERE club_id = $1 AND owner_id = $2`,
-        [r.club_id, userId]
-      );
-      if (checkOwner.rows.length === 0) return res.status(403).json({ message: "Not your club reservation" });
-    }
-
-    const deleted = await db.query(`DELETE FROM reservations WHERE reservation_id = $1 RETURNING *`, [id]);
-
-    res.json({ deleted: deleted.rows[0] });
+    return res.json({ message: "Deleted", reservation_id: id });
   } catch (err) {
-    console.error("DELETE /reservations/:id error:", err.message);
-    res.status(500).json({ message: "Server error" });
+    console.error("DELETE reservation error:", err);
+    return res.status(500).json({ message: "Server error" });
   }
 });
 
