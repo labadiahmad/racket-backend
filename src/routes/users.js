@@ -4,6 +4,7 @@ import userAuth from "../middleware/userAuth.js";
 
 const router = express.Router();
 
+// get current user profile
 router.get("/me", userAuth, async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];
@@ -21,11 +22,11 @@ router.get("/me", userAuth, async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("GET /users/me error:", err.message);
     res.status(500).json({ message: "Server error" });
   }
 });
 
+// update current user profile
 router.put("/me", userAuth, async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];
@@ -49,8 +50,6 @@ router.put("/me", userAuth, async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("PUT /users/me error:", err.message);
-
     if (err.code === "23505") {
       return res.status(409).json({ message: "Email already exists" });
     }

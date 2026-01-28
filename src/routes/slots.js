@@ -4,7 +4,7 @@ import ownerAuth from "../middleware/ownerAuth.js";
 
 const router = express.Router();
 
-
+// get all slots for a court
 router.get("/", async (req, res) => {
   try {
     const { court_id } = req.query;
@@ -24,13 +24,12 @@ router.get("/", async (req, res) => {
     );
 
     res.json(result.rows);
-  } catch (err) {
-    console.error("GET /slots error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
+// get slot availability for a specific date
 router.get("/availability", async (req, res) => {
   try {
     const { court_id, date_iso } = req.query;
@@ -60,19 +59,18 @@ router.get("/availability", async (req, res) => {
         AND r.status = 'Active'
       WHERE s.court_id = $1
         AND s.is_active = true
-      ORDER BY s.time_from;
+      ORDER BY s.time_from
       `,
       [court_id, date_iso]
     );
 
     res.json(result.rows);
-  } catch (err) {
-    console.error("GET /slots/availability error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
+// create a new slot (owner only)
 router.post("/", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
@@ -111,20 +109,14 @@ router.post("/", ownerAuth, async (req, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error("POST /slots error:", err.message);
-
     if (err.code === "23505") {
-      return res.status(409).json({ message: "Slot already exists for this court" });
+      return res.status(409).json({ message: "Slot already exists" });
     }
-    if (err.code === "23514") {
-      return res.status(400).json({ message: "Invalid slot time (time_to must be after time_from)" });
-    }
-
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
+// update a slot (owner only)
 router.put("/:id", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
@@ -151,17 +143,16 @@ router.put("/:id", ownerAuth, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Slot not found or not your slot" });
+      return res.status(404).json({ message: "Slot not found or not yours" });
     }
 
     res.json(result.rows[0]);
-  } catch (err) {
-    console.error("PUT /slots/:id error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
+// delete a slot (owner only)
 router.delete("/:id", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
@@ -183,12 +174,11 @@ router.delete("/:id", ownerAuth, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Slot not found or not your slot" });
+      return res.status(404).json({ message: "Slot not found or not yours" });
     }
 
     res.json({ deleted: result.rows[0] });
-  } catch (err) {
-    console.error("DELETE /slots/:id error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
