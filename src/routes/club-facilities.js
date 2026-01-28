@@ -4,7 +4,7 @@ import ownerAuth from "../middleware/ownerAuth.js";
 
 const router = express.Router();
 
-
+// Get all facilities for a specific club
 router.get("/", async (req, res) => {
   try {
     const { club_id } = req.query;
@@ -23,12 +23,11 @@ router.get("/", async (req, res) => {
 
     res.json(result.rows);
   } catch (err) {
-    console.error("GET /club-facilities error:", err.message);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
+// Add a new facility to a club (owner only)
 router.post("/", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
@@ -55,13 +54,12 @@ router.post("/", ownerAuth, async (req, res) => {
     );
 
     res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error("POST /club-facilities error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
+// Update an existing facility (owner only)
 router.put("/:id", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
@@ -70,9 +68,8 @@ router.put("/:id", ownerAuth, async (req, res) => {
 
     const result = await db.query(
       `UPDATE club_facilities f
-       SET
-         icon  = COALESCE($1, icon),
-         label = COALESCE($2, label)
+       SET icon = COALESCE($1, icon),
+           label = COALESCE($2, label)
        FROM clubs c
        WHERE f.facility_id = $3
          AND f.club_id = c.club_id
@@ -86,13 +83,12 @@ router.put("/:id", ownerAuth, async (req, res) => {
     }
 
     res.json(result.rows[0]);
-  } catch (err) {
-    console.error("PUT /club-facilities/:id error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
+// Delete a facility (owner only)
 router.delete("/:id", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
@@ -113,8 +109,7 @@ router.delete("/:id", ownerAuth, async (req, res) => {
     }
 
     res.json({ deleted: result.rows[0] });
-  } catch (err) {
-    console.error("DELETE /club-facilities/:id error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });

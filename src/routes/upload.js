@@ -5,10 +5,12 @@ import fs from "fs";
 
 const router = express.Router();
 
+// create folder if missing
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
+// multer storage config
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const folder = req.query.folder;
@@ -18,6 +20,7 @@ const storage = multer.diskStorage({
     if (folder === "avatars") dest = "uploads/avatars";
     if (folder === "reviews") dest = "uploads/reviews";
     if (folder === "courts") dest = "uploads/courts";
+
     ensureDir(dest);
     cb(null, dest);
   },
@@ -27,6 +30,7 @@ const storage = multer.diskStorage({
   },
 });
 
+// allow images only
 const fileFilter = (req, file, cb) => {
   const allowed = ["image/jpeg", "image/png", "image/webp"];
   if (!allowed.includes(file.mimetype)) {
@@ -35,24 +39,26 @@ const fileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
+// multer instance
 const upload = multer({
   storage,
   fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
+// upload endpoint
 router.post("/", (req, res) => {
   upload.single("file")(req, res, (err) => {
     if (err) return res.status(400).json({ message: err.message });
 
     if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded. Use form-data key: file" });
+      return res.status(400).json({ message: "No file uploaded" });
     }
 
     const folder = req.query.folder ? `/${req.query.folder}` : "";
     const url = `/uploads${folder}/${req.file.filename}`;
 
-    return res.status(201).json({ url });
+    res.status(201).json({ url });
   });
 });
 

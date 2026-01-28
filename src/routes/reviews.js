@@ -4,7 +4,7 @@ import userAuth from "../middleware/userAuth.js";
 
 const router = express.Router();
 
-
+// get all reviews for a club with their images
 router.get("/", async (req, res) => {
   try {
     const { club_id } = req.query;
@@ -45,13 +45,12 @@ router.get("/", async (req, res) => {
 
     res.json(result.rows);
   } catch (err) {
-    console.error("GET /reviews error:", err.message);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
-      router.post("/", userAuth, async (req, res) => {
+// create a new review with optional images
+router.post("/", userAuth, async (req, res) => {
   try {
     const userIdRaw = req.headers["x-user-id"];
     const userId = userIdRaw ? Number(userIdRaw) : null;
@@ -130,12 +129,11 @@ router.get("/", async (req, res) => {
 
     res.status(201).json(full.rows[0]);
   } catch (err) {
-    console.error("POST /reviews error:", err.message);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
+// update stars or comment of a review (owner only)
 router.put("/:id", userAuth, async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];
@@ -166,12 +164,11 @@ router.put("/:id", userAuth, async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("PUT /reviews/:id error:", err.message);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
+// delete a review (owner only)
 router.delete("/:id", userAuth, async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];
@@ -193,7 +190,6 @@ router.delete("/:id", userAuth, async (req, res) => {
 
     res.json({ deleted: result.rows[0] });
   } catch (err) {
-    console.error("DELETE /reviews/:id error:", err.message);
     res.status(500).json({ message: "Server error" });
   }
 });

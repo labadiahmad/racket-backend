@@ -5,8 +5,9 @@ import morgan from "morgan";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import db from "./db.js"; 
+import db from "./db.js";
 
+// route imports
 import authRoutes from "./routes/auth.js";
 import clubsRoutes from "./routes/clubs.js";
 import courtsRoutes from "./routes/courts.js";
@@ -24,19 +25,24 @@ import ownerDashboardRoutes from "./routes/owner-dashboard.js";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT ;
+const PORT = process.env.PORT;
 
+// fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// global middlewares
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
+// serve uploaded files
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
+// health check
 app.get("/", (req, res) => res.send("Racket API is running ✅"));
 
+// api routes
 app.use("/api/auth", authRoutes);
 app.use("/api/clubs", clubsRoutes);
 app.use("/api/courts", courtsRoutes);
@@ -51,10 +57,12 @@ app.use("/api/review-images", reviewImagesRoutes);
 app.use("/api/court-images", courtImagesRoutes);
 app.use("/api/owner", ownerDashboardRoutes);
 
+// fallback for unknown routes
 app.use((req, res) => {
   res.status(404).json({ message: "🚫 Route not found" });
 });
 
+// start server after db check
 (async () => {
   try {
     await db.query("SELECT 1 as ok");

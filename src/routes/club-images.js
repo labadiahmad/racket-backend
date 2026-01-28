@@ -4,7 +4,7 @@ import ownerAuth from "../middleware/ownerAuth.js";
 
 const router = express.Router();
 
-
+// Get all images for a club
 router.get("/", async (req, res) => {
   try {
     const { club_id } = req.query;
@@ -22,18 +22,15 @@ router.get("/", async (req, res) => {
     );
 
     res.json(result.rows);
-  } catch (err) {
-    console.error("GET /club-images error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
+// Add a new image to a club (owner only)
 router.post("/", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
-    if (!ownerId) return res.status(400).json({ message: "Missing x-user-id header" });
-
     const { club_id, image_url, position } = req.body;
 
     if (!club_id || !image_url) {
@@ -57,18 +54,15 @@ router.post("/", ownerAuth, async (req, res) => {
     );
 
     res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error("POST /club-images error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
+// Update an existing image (owner only)
 router.put("/:id", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
-    if (!ownerId) return res.status(400).json({ message: "Missing x-user-id header" });
-
     const { id } = req.params;
     const { image_url, position } = req.body;
 
@@ -94,18 +88,15 @@ router.put("/:id", ownerAuth, async (req, res) => {
     );
 
     res.json(result.rows[0]);
-  } catch (err) {
-    console.error("PUT /club-images/:id error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
+// Delete an image from a club (owner only)
 router.delete("/:id", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
-    if (!ownerId) return res.status(400).json({ message: "Missing x-user-id header" });
-
     const { id } = req.params;
 
     const check = await db.query(
@@ -128,8 +119,7 @@ router.delete("/:id", ownerAuth, async (req, res) => {
     );
 
     res.json({ deleted: result.rows[0] });
-  } catch (err) {
-    console.error("DELETE /club-images/:id error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });

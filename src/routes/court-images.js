@@ -4,7 +4,7 @@ import ownerAuth from "../middleware/ownerAuth.js";
 
 const router = express.Router();
 
-
+// Get images for a court
 router.get("/", async (req, res) => {
   try {
     const { court_id } = req.query;
@@ -22,13 +22,12 @@ router.get("/", async (req, res) => {
     );
 
     res.json(result.rows);
-  } catch (err) {
-    console.error("GET /court-images error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
+// Add image to a court (owner only)
 router.post("/", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
@@ -58,13 +57,12 @@ router.post("/", ownerAuth, async (req, res) => {
     );
 
     res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error("POST /court-images error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
+// Update image position (owner only)
 router.put("/:id", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
@@ -88,13 +86,12 @@ router.put("/:id", ownerAuth, async (req, res) => {
     }
 
     res.json(result.rows[0]);
-  } catch (err) {
-    console.error("PUT /court-images/:id error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
+// Delete court image (owner only)
 router.delete("/:id", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
@@ -116,8 +113,7 @@ router.delete("/:id", ownerAuth, async (req, res) => {
     }
 
     res.json({ deleted: result.rows[0] });
-  } catch (err) {
-    console.error("DELETE /court-images/:id error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });

@@ -4,6 +4,7 @@ import ownerAuth from "../middleware/ownerAuth.js";
 
 const router = express.Router();
 
+// Get all clubs with rating summary
 router.get("/", async (req, res) => {
   try {
     const result = await db.query(`
@@ -18,17 +19,18 @@ router.get("/", async (req, res) => {
     `);
 
     res.json(result.rows);
-  } catch (err) {
-    console.error("GET /clubs error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
 
+// Get single club by id with rating summary
 router.get("/:id", async (req, res) => {
   try {
     const clubId = Number(req.params.id);
 
-    const result = await db.query(`
+    const result = await db.query(
+      `
       SELECT
         c.*,
         COALESCE(ROUND(AVG(r.stars))::int, 0) AS avg_rating,
@@ -37,24 +39,24 @@ router.get("/:id", async (req, res) => {
       LEFT JOIN reviews r ON r.club_id = c.club_id
       WHERE c.club_id = $1
       GROUP BY c.club_id
-    `, [clubId]);
+      `,
+      [clubId]
+    );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Club not found" });
     }
 
     res.json(result.rows[0]);
-  } catch (err) {
-    console.error("GET /clubs/:id error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-
+// Create a new club (owner only)
 router.post("/", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
-    if (!ownerId) return res.status(400).json({ message: "Missing x-user-id header" });
 
     const {
       name,
@@ -99,17 +101,15 @@ router.post("/", ownerAuth, async (req, res) => {
     );
 
     res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error("POST /clubs error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
 
+// Update club info (owner only)
 router.put("/:id", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
-    if (!ownerId) return res.status(400).json({ message: "Missing x-user-id header" });
-
     const clubId = Number(req.params.id);
 
     const {
@@ -169,16 +169,15 @@ router.put("/:id", ownerAuth, async (req, res) => {
     }
 
     res.json({ club: result.rows[0] });
-  } catch (err) {
-    console.error("PUT /clubs/:id error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
 
+// Delete a club (owner only)
 router.delete("/:id", ownerAuth, async (req, res) => {
   try {
     const ownerId = req.headers["x-user-id"];
-    if (!ownerId) return res.status(400).json({ message: "Missing x-user-id header" });
 
     const result = await db.query(
       "DELETE FROM clubs WHERE club_id = $1 AND owner_id = $2 RETURNING *",
@@ -190,8 +189,7 @@ router.delete("/:id", ownerAuth, async (req, res) => {
     }
 
     res.json({ deleted: result.rows[0] });
-  } catch (err) {
-    console.error("DELETE /clubs/:id error:", err.message);
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
